@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAP AI SEASON — Planner Logístico</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --sap-blue:    #0070f2;
+    --sap-navy:    #003366;
+    --sap-electric:#1a6aff;
+    --sap-mid:     #e8f0fe;
+    --accent:      #00a8e0;
+    --accent2:     #ff3c00;   /* racing red */
+
+    --bg:          #f0f4f9;
+    --bg2:         #e6edf8;
+    --surface:     #ffffff;
+    --surface2:    #f7f9fd;
+    --border:      #dce5f2;
+    --border-strong:#b8cce8;
+
+    --text:        #0a1628;
+    --text-muted:  #4a5f80;
+    --text-dim:    #8fa3bf;
+
+    --pending:     #d97706;
+    --inprogress:  #0070f2;
+    --done:        #059669;
+    --blocked:     #dc2626;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─────────────────────────────────────────────
+     HEADER
+  ───────────────────────────────────────────── */
+  .header {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(105deg, #001f4d 0%, #003a8c 35%, #0058c0 65%, #0070f2 100%);
+    border-bottom: 3px solid var(--accent2);
+  }
+
+  /* Speed lines decoration */
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        100deg,
+        transparent,
+        transparent 120px,
+        rgba(255,255,255,0.03) 120px,
+        rgba(255,255,255,0.03) 122px
+      );
+    pointer-events: none;
+  }
+
+  /* Bottom glow line */
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,168,224,0.6) 30%, rgba(0,168,224,0.6) 70%, transparent);
+  }
+
+  .header-inner {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 36px;
+    gap: 16px;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 20px; }
+
+  /* SAP logo badge */
+  .sap-logo {
+    background: white;
+    color: var(--sap-blue);
+    font-size: 0.9rem;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .divider-v {
+    width: 1px; height: 36px;
+    background: rgba(255,255,255,0.2);
+  }
+
+  .brand-text {}
+  .brand-title {
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #ffffff;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+  .brand-title span {
+    color: var(--accent);
+  }
+  .brand-subtitle {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.55);
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 5px;
+  }
+
+  /* Racing stripe accent */
+  .racing-stripe {
+    display: flex; align-items: center; gap: 4px;
+    margin-left: 24px;
+  }
+  .stripe { height: 28px; border-radius: 2px; }
+  .stripe-1 { width: 4px;  background: var(--accent2); }
+  .stripe-2 { width: 8px;  background: rgba(255,255,255,0.5); }
+  .stripe-3 { width: 16px; background: var(--accent); }
+
+  .header-right { display: flex; gap: 10px; align-items: center; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 6px; border: none;
+    cursor: pointer; font-size: 0.8rem; font-weight: 700;
+    transition: all 0.18s; font-family: inherit;
+    letter-spacing: 0.3px; text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .btn-ghost {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.85);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.2); color: white; }
+  .btn-primary {
+    background: white;
+    color: var(--sap-blue);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+  .btn-success { background: linear-gradient(135deg, #059669, #047857); color: white; }
+  .btn-success:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(5,150,105,0.35); }
+
+  /* ─────────────────────────────────────────────
+     STATS BAR
+  ───────────────────────────────────────────── */
+  .stats-bar {
+    display: flex; gap: 10px; padding: 16px 36px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .stat-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 18px; border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    min-width: 105px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: default;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,112,242,0.1); }
+
+  .stat-num { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+  .stat-total    .stat-num { color: var(--sap-navy); }
+  .stat-pending  .stat-num { color: var(--pending); }
+  .stat-inprogress .stat-num { color: var(--inprogress); }
+  .stat-done     .stat-num { color: var(--done); }
+  .stat-blocked  .stat-num { color: var(--blocked); }
+
+  /* ─────────────────────────────────────────────
+     PROGRESS
+  ───────────────────────────────────────────── */
+  .progress-section {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 36px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .progress-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
+  .progress-bar-wrap { flex: 1; background: var(--bg2); border-radius: 999px; height: 7px; overflow: hidden; }
+  .progress-bar-fill {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--sap-blue) 0%, var(--accent) 100%);
+    transition: width 0.6s cubic-bezier(.22,1,.36,1);
+  }
+  .progress-pct { font-size: 0.78rem; font-weight: 800; color: var(--sap-blue); min-width: 38px; text-align: right; }
+
+  /* ─────────────────────────────────────────────
+     FILTERS
+  ───────────────────────────────────────────── */
+  .filters {
+    display: flex; gap: 8px; padding: 12px 36px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; align-items: center;
+  }
+  .filter-label { font-size: 0.68rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.6px; margin-right: 2px; }
+  .filter-btn {
+    padding: 5px 13px; border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: transparent; cursor: pointer;
+    font-size: 0.73rem; font-weight: 600;
+    color: var(--text-muted);
+    transition: all 0.15s; font-family: inherit;
+  }
+  .filter-btn:hover { border-color: var(--sap-blue); color: var(--sap-blue); background: var(--sap-mid); }
+  .filter-btn.active { border-color: var(--sap-blue); background: var(--sap-mid); color: var(--sap-blue); }
+  .filter-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  .search-box {
+    margin-left: auto; padding: 7px 14px;
+    border: 1.5px solid var(--border); border-radius: 20px;
+    font-size: 0.8rem; width: 220px; outline: none;
+    background: var(--surface2); color: var(--text);
+    transition: border-color 0.2s; font-family: inherit;
+  }
+  .search-box:focus { border-color: var(--sap-blue); background: white; box-shadow: 0 0 0 3px rgba(0,112,242,0.1); }
+
+  /* ─────────────────────────────────────────────
+     MAIN
+  ───────────────────────────────────────────── */
+  .main { padding: 28px 36px; }
+
+  /* ─────────────────────────────────────────────
+     SECTION GROUPS
+  ───────────────────────────────────────────── */
+  .section-group { margin-bottom: 28px; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; border-radius: 10px 10px 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-left-width: 4px;
+    background: white;
+  }
+
+  .section-icon { font-size: 1rem; }
+  .section-title { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .section-count {
+    margin-left: auto;
+    font-size: 0.67rem; font-weight: 700;
+    background: var(--bg2); border-radius: 20px;
+    padding: 2px 9px; color: var(--text-muted);
+  }
+  .section-progress-mini { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; color: var(--text-muted); font-weight: 600; }
+  .mini-bar { width: 48px; height: 4px; background: var(--bg2); border-radius: 99px; overflow: hidden; }
+  .mini-fill { height: 100%; border-radius: 99px; transition: width 0.5s; }
+
+  /* ─────────────────────────────────────────────
+     TASK CARDS
+  ───────────────────────────────────────────── */
+  .task-grid { display: flex; flex-direction: column; }
+
+  .task-card {
+    display: grid;
+    grid-template-columns: 3px 1fr auto auto auto auto;
+    align-items: center;
+    gap: 0 14px;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid var(--border);
+    border-top: none;
+    transition: background 0.12s, border-color 0.12s;
+    cursor: default;
+  }
+  .task-card:last-child { border-radius: 0 0 10px 10px; }
+  .task-card:hover { background: var(--sap-mid); }
+  .task-card.done-card { opacity: 0.5; }
+  .task-card.done-card .task-name { text-decoration: line-through; color: var(--text-muted); }
+
+  .priority-bar { width: 3px; align-self: stretch; border-radius: 99px; min-height: 28px; }
+  .p-alta  .priority-bar { background: var(--blocked); }
+  .p-media .priority-bar { background: var(--pending); }
+  .p-baja  .priority-bar { background: var(--text-dim); }
+
+  .task-name  { font-size: 0.84rem; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .task-notes { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; }
+
+  /* Status select styled as badge */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 0.67rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    white-space: nowrap; cursor: pointer;
+    font-family: inherit; border: 1.5px solid;
+    -webkit-appearance: none; appearance: none;
+    background-image: none;
+  }
+  .badge-pending    { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+  .badge-inprogress { background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; }
+  .badge-done       { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
+  .badge-blocked    { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+
+  .task-owner { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+  .task-due   { font-size: 0.72rem; color: var(--text-dim);   white-space: nowrap; }
+
+  .row-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+  .task-card:hover .row-actions { opacity: 1; }
+  .row-btn {
+    width: 27px; height: 27px; border-radius: 6px;
+    border: 1px solid var(--border); background: white;
+    cursor: pointer; font-size: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); transition: all 0.12s;
+  }
+  .row-btn:hover { border-color: var(--sap-blue); color: var(--sap-blue); background: var(--sap-mid); }
+  .row-btn.delete:hover { border-color: #fca5a5; color: var(--blocked); background: #fef2f2; }
+
+  /* ─────────────────────────────────────────────
+     EMPTY STATE
+  ───────────────────────────────────────────── */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--text-muted); font-size: 0.88rem;
+    background: white; border-radius: 10px;
+    border: 1.5px dashed var(--border);
+  }
+  .empty-state p { margin-bottom: 16px; }
+
+  /* ─────────────────────────────────────────────
+     MODAL
+  ───────────────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(3px);
+    z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 28px; width: 560px;
+    max-width: 95vw; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,51,102,0.18);
+  }
+  .modal h2 { font-size: 1rem; font-weight: 800; margin-bottom: 22px; color: var(--sap-navy); text-transform: uppercase; letter-spacing: 0.3px; }
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 0.68rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--border);
+    border-radius: 7px; font-size: 0.85rem; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: inherit; background: var(--surface2); color: var(--text);
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    border-color: var(--sap-blue); background: white;
+    box-shadow: 0 0 0 3px rgba(0,112,242,0.12);
+  }
+  .form-row textarea { resize: vertical; min-height: 70px; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+  .btn-cancel { background: var(--surface2); color: var(--text-muted); border: 1.5px solid var(--border); }
+  .btn-cancel:hover { background: var(--bg2); color: var(--text); }
+
+  /* ─────────────────────────────────────────────
+     TOAST
+  ───────────────────────────────────────────── */
+  .toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--sap-navy); color: white;
+    padding: 11px 20px; border-radius: 8px;
+    font-size: 0.82rem; font-weight: 600;
+    z-index: 9999; opacity: 0; transform: translateY(8px);
+    transition: all 0.25s cubic-bezier(.22,1,.36,1);
+    pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ─────────────────────────────────────────────
+     RESPONSIVE
+  ───────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .header-inner, .filters, .stats-bar, .main, .progress-section { padding-left: 16px; padding-right: 16px; }
+    .task-card { grid-template-columns: 3px 1fr auto auto; }
+    .task-owner, .task-due { display: none; }
+    .brand-title { font-size: 1.1rem; }
+    .racing-stripe { display: none; }
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <div class="sap-logo">SAP</div>
+      <div class="divider-v"></div>
+      <div class="brand-text">
+        <div class="brand-title">AI <span>SEASON</span></div>
+        <div class="brand-subtitle">Planner Logístico</div>
+      </div>
+      <div class="racing-stripe">
+        <div class="stripe stripe-1"></div>
+        <div class="stripe stripe-2"></div>
+        <div class="stripe stripe-3"></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-ghost" onclick="exportCSV()">↓ Exportar CSV</button>
+      <button class="btn btn-primary" onclick="openModal()">+ Nueva Tarea</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-card stat-total">
+    <div><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total</div></div>
+  </div>
+  <div class="stat-card stat-pending">
+    <div><div class="stat-num" id="stat-pending">0</div><div class="stat-label">Pendiente</div></div>
+  </div>
+  <div class="stat-card stat-inprogress">
+    <div><div class="stat-num" id="stat-inprogress">0</div><div class="stat-label">En progreso</div></div>
+  </div>
+  <div class="stat-card stat-done">
+    <div><div class="stat-num" id="stat-done">0</div><div class="stat-label">Completado</div></div>
+  </div>
+  <div class="stat-card stat-blocked">
+    <div><div class="stat-num" id="stat-blocked">0</div><div class="stat-label">Bloqueado</div></div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-section">
+  <span class="progress-label">Progreso general</span>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+  <span class="progress-pct" id="progress-pct">0%</span>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <span class="filter-label">Estado:</span>
+  <button class="filter-btn active" onclick="setFilter('status','all',this)">Todos</button>
+  <button class="filter-btn" onclick="setFilter('status','pending',this)">Pendiente</button>
+  <button class="filter-btn" onclick="setFilter('status','inprogress',this)">En progreso</button>
+  <button class="filter-btn" onclick="setFilter('status','done',this)">Completado</button>
+  <button class="filter-btn" onclick="setFilter('status','blocked',this)">Bloqueado</button>
+  <div class="filter-sep"></div>
+  <span class="filter-label">Área:</span>
+  <button class="filter-btn" onclick="setFilter('cat','all',this)">Todas</button>
+  <button class="filter-btn" onclick="setFilter('cat','facilities',this)">🏛 Facilities</button>
+  <button class="filter-btn" onclick="setFilter('cat','it',this)">💻 IT</button>
+  <button class="filter-btn" onclick="setFilter('cat','speakers',this)">🎤 Speakers</button>
+  <button class="filter-btn" onclick="setFilter('cat','branding',this)">📣 Branding</button>
+  <input type="text" class="search-box" id="searchBox" placeholder="🔍  Buscar tarea..." oninput="renderTable()">
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div id="tableContainer"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h2 id="modalTitle">+ Nueva Tarea</h2>
+    <input type="hidden" id="editId">
+    <div class="form-row">
+      <label>Descripción *</label>
+      <input type="text" id="fName" placeholder="Describe la tarea...">
+    </div>
+    <div class="form-row-2">
+      <div class="form-row">
+        <label>Área *</label>
+        <select id="fCat">
+          <option value="facilities">🏛 Facilities</option>
+          <option value="it">💻 Tecnología / IT</option>
+          <option value="speakers">🎤 Speakers IAE</option>
+          <option value="branding">📣 Branding & Comunicación</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Estado *</label>
+        <select id="fStatus">
+          <option value="pending">⏳ Pendiente</option>
+          <option value="inprogress">◎ En progreso</option>
+          <option value="done">✓ Completado</option>
+          <option value="blocked">✕ Bloqueado</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-row">
+        <label>Prioridad</label>
+        <select id="fPriority">
+          <option value="media">Media</option>
+          <option value="alta">Alta</option>
+          <option value="baja">Baja</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Fecha límite</label>
+        <input type="date" id="fDue">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Responsable</label>
+      <input type="text" id="fOwner" placeholder="Nombre o área">
+    </div>
+    <div class="form-row">
+      <label>Notas</label>
+      <textarea id="fNotes" placeholder="Detalles adicionales..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-success" onclick="saveTask()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── METADATA ──────────────────────────────────────────────────────────────
+const CAT_META = {
+  facilities: { label: 'Facilities',             icon: '🏛', color: '#0058c0', bg: '#e8f0fe' },
+  it:         { label: 'Tecnología / IT',         icon: '💻', color: '#0891b2', bg: '#e0f7fa' },
+  speakers:   { label: 'Speakers IAE',            icon: '🎤', color: '#d97706', bg: '#fffbeb' },
+  branding:   { label: 'Branding & Comunicación', icon: '📣', color: '#be185d', bg: '#fdf2f8' },
+};
+
+const STATUS_META = {
+  pending:    { label: 'Pendiente',   cls: 'badge-pending'    },
+  inprogress: { label: 'En progreso', cls: 'badge-inprogress' },
+  done:       { label: 'Completado',  cls: 'badge-done'       },
+  blocked:    { label: 'Bloqueado',   cls: 'badge-blocked'    },
+};
+
+let filters = { status: 'all', cat: 'all' };
+
+// ── TASKS ─────────────────────────────────────────────────────────────────
+const INITIAL_TASKS = [
+  // Facilities
+  { cat:'facilities', name:'Reservar auditorio/comedor',                                status:'pending', priority:'alta',  owner:'Facilities', due:'', notes:'' },
+  { cat:'facilities', name:'Reservar escenario',                                        status:'pending', priority:'alta',  owner:'Facilities', due:'', notes:'' },
+  { cat:'facilities', name:'Avisar fecha del evento a Facilities',                      status:'pending', priority:'alta',  owner:'Facilities', due:'', notes:'' },
+  { cat:'facilities', name:'Reservar cafetería para las salas (agua, café y vajillas)', status:'pending', priority:'media', owner:'Facilities', due:'', notes:'' },
+
+  // IT
+  { cat:'it', name:'Informar a IT y solicitar soporte', status:'pending', priority:'alta',  owner:'IT', due:'', notes:'' },
+  { cat:'it', name:'Prueba de sonido del comedor',      status:'pending', priority:'alta',  owner:'IT', due:'', notes:'' },
+  { cat:'it', name:'Confirmar streaming',               status:'pending', priority:'alta',  owner:'IT', due:'', notes:'' },
+
+  // Speakers IAE
+  { cat:'speakers', name:'Solicitar una BIO para brandear',    status:'pending', priority:'alta',  owner:'Coordinación', due:'', notes:'' },
+  { cat:'speakers', name:'Confirmar agenda',                   status:'pending', priority:'alta',  owner:'Coordinación', due:'', notes:'' },
+  { cat:'speakers', name:'Nombrar un host para Pablo Poza',    status:'pending', priority:'alta',  owner:'Coordinación', due:'', notes:'' },
+  { cat:'speakers', name:'Reservar estacionamiento de visita', status:'pending', priority:'media', owner:'Facilities',   due:'', notes:'' },
+
+  // Branding & Comunicación
+  { cat:'branding', name:'Publicar evento',           status:'pending', priority:'alta',  owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Abrir registro',            status:'pending', priority:'alta',  owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Reminder 1',                status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Reminder 2',                status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Reminder día anterior',     status:'pending', priority:'alta',  owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Señalética física',         status:'pending', priority:'media', owner:'Marketing', due:'', notes:'' },
+  { cat:'branding', name:'Pantallas del edificio',    status:'pending', priority:'media', owner:'Marketing', due:'', notes:'' },
+  { cat:'branding', name:'Slides de bienvenida',      status:'pending', priority:'alta',  owner:'Marketing', due:'', notes:'' },
+  { cat:'branding', name:'QR para encuesta',          status:'pending', priority:'media', owner:'Marketing', due:'', notes:'' },
+  { cat:'branding', name:'Fotografías',               status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Video',                     status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Agradecimiento',            status:'pending', priority:'baja',  owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Compartir grabaciones',     status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Compartir materiales',      status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Publicar fotos',            status:'pending', priority:'baja',  owner:'Comms',     due:'', notes:'' },
+  { cat:'branding', name:'Publicar métricas',         status:'pending', priority:'baja',  owner:'Comms',     due:'', notes:'' },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+function loadTasks() {
+  try {
+    const saved = localStorage.getItem('sap_ai_season_tasks');
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return INITIAL_TASKS.map((t, i) => ({ ...t, id: i + 1 }));
+}
+function saveTasks(tasks) {
+  localStorage.setItem('sap_ai_season_tasks', JSON.stringify(tasks));
+}
+
+let tasks = loadTasks();
+let nextId = tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+
+// ── FILTERS ───────────────────────────────────────────────────────────────
+function setFilter(type, val, btn) {
+  filters[type] = val;
+  const allBtns = btn.closest('.filters').querySelectorAll(
+    type === 'status' ? '[onclick*="\'status\'"]' : '[onclick*="\'cat\'"]'
+  );
+  allBtns.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function getFiltered() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  return tasks.filter(t => {
+    if (filters.status !== 'all' && t.status !== filters.status) return false;
+    if (filters.cat !== 'all' && t.cat !== filters.cat) return false;
+    if (q && !t.name.toLowerCase().includes(q) && !(t.notes||'').toLowerCase().includes(q) && !(t.owner||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function renderTable() {
+  updateStats();
+  const filtered = getFiltered();
+  const container = document.getElementById('tableContainer');
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state"><p>No se encontraron tareas.</p><button class="btn btn-primary" onclick="openModal()">+ Agregar tarea</button></div>`;
+    return;
+  }
+
+  const grouped = {};
+  Object.keys(CAT_META).forEach(c => { grouped[c] = []; });
+  filtered.forEach(t => { if (grouped[t.cat]) grouped[t.cat].push(t); });
+
+  let html = '';
+  Object.entries(CAT_META).forEach(([catKey, catInfo]) => {
+    const items = grouped[catKey];
+    if (!items || items.length === 0) return;
+
+    const doneCount = items.filter(t => t.status === 'done').length;
+    const pct = items.length ? Math.round((doneCount / items.length) * 100) : 0;
+
+    html += `<div class="section-group">
+      <div class="section-header" style="border-left-color:${catInfo.color};background:${catInfo.bg}">
+        <span class="section-icon">${catInfo.icon}</span>
+        <span class="section-title" style="color:${catInfo.color}">${catInfo.label}</span>
+        <div class="section-progress-mini">
+          <div class="mini-bar"><div class="mini-fill" style="width:${pct}%;background:${catInfo.color}"></div></div>
+          <span>${pct}%</span>
+        </div>
+        <div class="section-count">${items.length} tarea${items.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="task-grid">`;
+
+    items.forEach(t => {
+      const sm = STATUS_META[t.status] || STATUS_META.pending;
+      const isDone = t.status === 'done';
+      const pClass = `p-${t.priority || 'media'}`;
+      html += `<div class="task-card ${isDone ? 'done-card' : ''} ${pClass}" id="row-${t.id}">
+        <div class="priority-bar"></div>
+        <div>
+          <div class="task-name">${esc(t.name)}</div>
+          ${t.notes ? `<div class="task-notes">${esc(t.notes)}</div>` : ''}
+        </div>
+        <select class="badge ${sm.cls}" onchange="changeStatus(${t.id}, this.value)">
+          ${Object.entries(STATUS_META).map(([k,v]) => `<option value="${k}" ${k===t.status?'selected':''}>${v.label}</option>`).join('')}
+        </select>
+        <span class="task-owner">${esc(t.owner || '')}</span>
+        <span class="task-due">${t.due ? formatDate(t.due) : ''}</span>
+        <div class="row-actions">
+          <button class="row-btn" onclick="editTask(${t.id})" title="Editar">✎</button>
+          <button class="row-btn delete" onclick="deleteTask(${t.id})" title="Eliminar">✕</button>
+        </div>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────
+function updateStats() {
+  const total   = tasks.length;
+  const pending = tasks.filter(t => t.status === 'pending').length;
+  const inp     = tasks.filter(t => t.status === 'inprogress').length;
+  const done    = tasks.filter(t => t.status === 'done').length;
+  const blocked = tasks.filter(t => t.status === 'blocked').length;
+
+  document.getElementById('stat-total').textContent     = total;
+  document.getElementById('stat-pending').textContent   = pending;
+  document.getElementById('stat-inprogress').textContent= inp;
+  document.getElementById('stat-done').textContent      = done;
+  document.getElementById('stat-blocked').textContent   = blocked;
+
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// ── CRUD ──────────────────────────────────────────────────────────────────
+function openModal() {
+  document.getElementById('editId').value = '';
+  document.getElementById('modalTitle').textContent = '+ Nueva Tarea';
+  ['fName','fOwner','fDue','fNotes'].forEach(f => document.getElementById(f).value = '');
+  document.getElementById('fCat').value      = 'facilities';
+  document.getElementById('fStatus').value   = 'pending';
+  document.getElementById('fPriority').value = 'media';
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('fName').focus();
+}
+
+function editTask(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('editId').value    = id;
+  document.getElementById('modalTitle').textContent = '✎ Editar Tarea';
+  document.getElementById('fName').value     = t.name;
+  document.getElementById('fCat').value      = t.cat;
+  document.getElementById('fStatus').value   = t.status;
+  document.getElementById('fPriority').value = t.priority || 'media';
+  document.getElementById('fOwner').value    = t.owner || '';
+  document.getElementById('fDue').value      = t.due || '';
+  document.getElementById('fNotes').value    = t.notes || '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function saveTask() {
+  const name = document.getElementById('fName').value.trim();
+  if (!name) { showToast('⚠ La descripción es obligatoria'); return; }
+  const data = {
+    name,
+    cat:      document.getElementById('fCat').value,
+    status:   document.getElementById('fStatus').value,
+    priority: document.getElementById('fPriority').value,
+    owner:    document.getElementById('fOwner').value.trim(),
+    due:      document.getElementById('fDue').value,
+    notes:    document.getElementById('fNotes').value.trim(),
+  };
+  const editId = parseInt(document.getElementById('editId').value);
+  if (editId) {
+    const idx = tasks.findIndex(t => t.id === editId);
+    if (idx >= 0) tasks[idx] = { ...tasks[idx], ...data };
+    showToast('✓ Tarea actualizada');
+  } else {
+    tasks.push({ ...data, id: nextId++ });
+    showToast('✓ Tarea creada');
+  }
+  saveTasks(tasks);
+  closeModal();
+  renderTable();
+}
+
+function deleteTask(id) {
+  if (!confirm('¿Eliminar esta tarea?')) return;
+  tasks = tasks.filter(t => t.id !== id);
+  saveTasks(tasks);
+  showToast('Tarea eliminada');
+  renderTable();
+}
+
+function changeStatus(id, status) {
+  const t = tasks.find(x => x.id === id);
+  if (t) { t.status = status; saveTasks(tasks); updateStats(); renderTable(); }
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const headers = ['ID','Área','Tarea','Estado','Prioridad','Responsable','Fecha Límite','Notas'];
+  const rows = tasks.map(t => [
+    t.id, CAT_META[t.cat]?.label || t.cat, t.name,
+    STATUS_META[t.status]?.label || t.status, t.priority || 'media',
+    t.owner || '', t.due || '', t.notes || ''
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`));
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'SAP_AI_Season_Planner.csv';
+  a.click();
+  showToast('CSV exportado');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+renderTable();
+</script>
+</body>
+</html>
