@@ -473,6 +473,7 @@
   <button class="filter-btn" onclick="setFilter('cat','it',this)">💻 IT</button>
   <button class="filter-btn" onclick="setFilter('cat','speakers',this)">🎤 Speakers</button>
   <button class="filter-btn" onclick="setFilter('cat','branding',this)">📣 Branding</button>
+  <button class="filter-btn" onclick="setFilter('cat','postevento',this)">🏁 Post Evento</button>
   <input type="text" class="search-box" id="searchBox" placeholder="🔍  Buscar tarea..." oninput="renderTable()">
 </div>
 
@@ -498,6 +499,7 @@
           <option value="it">💻 Tecnología / IT</option>
           <option value="speakers">🎤 Speakers IAE</option>
           <option value="branding">📣 Branding & Comunicación</option>
+          <option value="postevento">🏁 Post Evento</option>
         </select>
       </div>
       <div class="form-row">
@@ -549,6 +551,7 @@ const CAT_META = {
   it:         { label: 'Tecnología / IT',         icon: '💻', color: '#0891b2', bg: '#e0f7fa' },
   speakers:   { label: 'Speakers IAE',            icon: '🎤', color: '#d97706', bg: '#fffbeb' },
   branding:   { label: 'Branding & Comunicación', icon: '📣', color: '#be185d', bg: '#fdf2f8' },
+  postevento: { label: 'Post Evento',             icon: '🏁', color: '#16a34a', bg: '#f0fdf4' },
 };
 
 const STATUS_META = {
@@ -591,11 +594,13 @@ const INITIAL_TASKS = [
   { cat:'branding', name:'QR para encuesta',          status:'pending', priority:'media', owner:'Marketing', due:'', notes:'' },
   { cat:'branding', name:'Fotografías',               status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
   { cat:'branding', name:'Video',                     status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
-  { cat:'branding', name:'Agradecimiento',            status:'pending', priority:'baja',  owner:'Comms',     due:'', notes:'' },
-  { cat:'branding', name:'Compartir grabaciones',     status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
-  { cat:'branding', name:'Compartir materiales',      status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
-  { cat:'branding', name:'Publicar fotos',            status:'pending', priority:'baja',  owner:'Comms',     due:'', notes:'' },
-  { cat:'branding', name:'Publicar métricas',         status:'pending', priority:'baja',  owner:'Comms',     due:'', notes:'' },
+
+  // Post Evento
+  { cat:'postevento', name:'Agradecimiento',            status:'pending', priority:'baja',  owner:'Comms',     due:'', notes:'' },
+  { cat:'postevento', name:'Compartir grabaciones',     status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
+  { cat:'postevento', name:'Compartir materiales',      status:'pending', priority:'media', owner:'Comms',     due:'', notes:'' },
+  { cat:'postevento', name:'Publicar fotos',            status:'pending', priority:'baja',  owner:'Comms',     due:'', notes:'' },
+  { cat:'postevento', name:'Publicar métricas',         status:'pending', priority:'baja',  owner:'Comms',     due:'', notes:'' },
 ];
 
 // ── STATE ─────────────────────────────────────────────────────────────────
